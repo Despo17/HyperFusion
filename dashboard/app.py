@@ -1,3 +1,16 @@
+import os
+import sys
+import streamlit as st
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+st.write("ROOT:", ROOT_DIR)
+st.write("FILES:", os.listdir(ROOT_DIR))
+
+sys.path.append(ROOT_DIR)
+sys.path.append(os.path.join(ROOT_DIR, "src"))
+
+st.write("PATH:", sys.path)
 import sys
 import os
 import time
