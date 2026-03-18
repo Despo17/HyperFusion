@@ -2,8 +2,6 @@ import numpy as np
 import tensorflow as tf
 from src.data.market_data import ASSETS
 from src.models.hyperfusion_multi import build_multi_asset_hyperfusion
-
-
 class MultiAssetPredictor:
 
     def __init__(self, model_path="models/hyperfusion_multi.h5"):
