@@ -6,4 +6,4 @@ plotly
 yfinance
 joblib
 gdown
-keras
+tensorflow==2.13.0
