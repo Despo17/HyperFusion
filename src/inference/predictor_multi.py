@@ -2,7 +2,16 @@ import numpy as np
 import tensorflow as tf
 from src.data.market_data import ASSETS
 from src.models.hyperfusion_multi import build_multi_asset_hyperfusion
+import os
+import gdown
 
+MODEL_PATH = "hyperfusion_multi.h5"
+
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        file_id = "1SB9t5o5O1no4dZja5MdgHCbdRA0JQ_an"
+        url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(url, MODEL_PATH, quiet=False)
 
 class MultiAssetPredictor:
 
