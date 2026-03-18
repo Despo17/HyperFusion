@@ -1,23 +1,21 @@
 import numpy as np
-from keras.models import load_model
+import tensorflow as tf
 from src.data.market_data import ASSETS
 from src.models.hyperfusion_multi import build_multi_asset_hyperfusion
-import os
-import gdown
 
-MODEL_PATH = "hyperfusion_multi.h5"
-
-def download_model():
-    if not os.path.exists(MODEL_PATH):
-        file_id = "1SB9t5o5O1no4dZja5MdgHCbdRA0JQ_an"
-        url = f"https://drive.google.com/uc?id={file_id}"
-        gdown.download(url, MODEL_PATH, quiet=False)
 
 class MultiAssetPredictor:
 
     def __init__(self, model_path="models/hyperfusion_multi.h5"):
         # Rebuild architecture
-        self.model = load_model(model_path)
+        self.model = build_multi_asset_hyperfusion(
+            seq_len=30,
+            num_features=10,
+            num_assets=len(ASSETS)
+        )
+
+        # Load weights only
+        self.model.load_weights(model_path)
 
         self.asset_to_id = {
             asset: i for i, asset in enumerate(ASSETS.keys())
