@@ -1,6 +1,21 @@
+# Virtual environment
 venv/
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Model files
 models/
+saved_models/
+
+# Data files
 data/
-.env
+
+# Evaluation outputs
+*.png
+*.txt
+
+# OS files
+.DS_Store
+Thumbs.db
