@@ -9,7 +9,6 @@ import pandas as pd
 import numpy as np
 import joblib
 from src.data.market_data import update_market_data
-from src.inference.predictor import VolatilityPredictor
 
 SEQ_LEN = 30
 SCALER_PATH = Path("data/processed/feature_scaler.save")

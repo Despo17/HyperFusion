@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+
 from pathlib import Path
 
 MODEL_PATH = Path("saved_models/hyperfusionnet.keras")
