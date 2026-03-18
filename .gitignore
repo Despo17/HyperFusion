@@ -14,7 +14,11 @@ data/
 
 # Evaluation outputs
 *.png
-*.txt
+# Ignore only evaluation outputs
+model_*.txt
+
+# Allow runtime file
+!runtime.txt
 
 # OS files
 .DS_Store
