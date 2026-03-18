@@ -9,8 +9,11 @@ __pycache__/
 models/
 saved_models/
 
-# Data files
-data/
+# Ignore only root data folder
+/data/
+
+# DO NOT ignore src data
+!src/data/
 
 # Evaluation outputs
 *.png
