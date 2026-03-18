@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+from keras.models import load_model
 from src.data.market_data import ASSETS
 from src.models.hyperfusion_multi import build_multi_asset_hyperfusion
 import os
@@ -17,14 +17,7 @@ class MultiAssetPredictor:
 
     def __init__(self, model_path="models/hyperfusion_multi.h5"):
         # Rebuild architecture
-        self.model = build_multi_asset_hyperfusion(
-            seq_len=30,
-            num_features=10,
-            num_assets=len(ASSETS)
-        )
-
-        # Load weights only
-        self.model.load_weights(model_path)
+        self.model = load_model(model_path)
 
         self.asset_to_id = {
             asset: i for i, asset in enumerate(ASSETS.keys())
