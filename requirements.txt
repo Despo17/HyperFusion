@@ -1,11 +1,9 @@
-yfinance
+streamlit
 pandas
 numpy
 scikit-learn
-tensorflow
-fastapi
-uvicorn
-streamlit
-matplotlib
 plotly
+yfinance
+joblib
 gdown
+tensorflow-cpu==2.12.0
