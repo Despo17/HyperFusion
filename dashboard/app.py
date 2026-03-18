@@ -8,14 +8,17 @@ import plotly.graph_objects as go
 # ==============================
 # PATH FIX
 # ==============================
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
 
-from src.data.market_data import update_market_data, ASSETS
-from src.features.volatility_features import add_features
-from src.live.live_predict import build_live_sequence
-from src.inference.predictor_multi import MultiAssetPredictor
+# Force add project root to path (robust fix)
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+sys.path.append(ROOT_DIR)
+sys.path.append(os.path.join(ROOT_DIR, "src"))
+
+from data.market_data import update_market_data, ASSETS
+from features.volatility_features import add_features
+from live.live_predict import build_live_sequence
+from inference.predictor_multi import MultiAssetPredictor
 
 # ==============================
 # PAGE CONFIG
