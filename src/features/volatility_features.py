@@ -5,24 +5,54 @@ from pathlib import Path
 RAW_PATH = Path("data/raw/nifty.csv")
 PROCESSED_PATH = Path("data/processed/nifty_features.csv")
 
+
 def add_features(df, window=10):
     """
-    Create volatility and technical features
+    Create volatility and technical features (SAFE VERSION)
     """
+
     df = df.copy()
 
-    # Ensure numeric columns
+    # =========================
+    # ✅ FIX 1: HANDLE MULTIINDEX (yfinance issue)
+    # =========================
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    # =========================
+    # ✅ FIX 2: VALIDATE INPUT
+    # =========================
+    if df is None or df.empty:
+        raise ValueError("❌ DataFrame is empty or None")
+
+    # =========================
+    # ✅ FIX 3: SAFE COLUMN HANDLING
+    # =========================
     numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+
     for col in numeric_cols:
+
+        if col not in df.columns:
+            raise ValueError(f"❌ Missing column: {col}")
+
+        # If accidentally a DataFrame instead of Series
+        if isinstance(df[col], pd.DataFrame):
+            df[col] = df[col].iloc[:, 0]
+
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
+    # Remove bad rows
     df.dropna(subset=numeric_cols, inplace=True)
+
+    # =========================
+    # FEATURE ENGINEERING
+    # =========================
 
     # Returns
     df['return'] = df['Close'].pct_change(fill_method=None)
     df['log_return'] = np.log(df['Close'] / df['Close'].shift(1))
 
-    # Range
+    # Price range
     df['hl_range'] = (df['High'] - df['Low']) / df['Close']
 
     # Moving averages
@@ -32,14 +62,15 @@ def add_features(df, window=10):
     # Volatility
     df['volatility'] = df['log_return'].rolling(window).std()
 
-    # --- Normalized volatility target ---
+    # Normalized volatility
     df["vol_mean_20"] = df["volatility"].rolling(20).mean()
     df["vol_norm"] = df["volatility"] / df["vol_mean_20"]
 
-    # FINAL cleanup (after ALL rolling)
+    # Final cleanup
     df.dropna(inplace=True)
 
     return df
+
 
 def main():
     print("Loading raw data...")
@@ -53,6 +84,7 @@ def main():
 
     print("Features saved at:", PROCESSED_PATH)
     print("Dataset shape:", df.shape)
+
 
 if __name__ == "__main__":
     main()
