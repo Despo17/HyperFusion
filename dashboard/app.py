@@ -67,15 +67,32 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==============================
-# DATA
+# DATA (SAFE + CACHED)
 # ==============================
-df = update_market_data(asset)
-df_feat = add_features(df)
+@st.cache_data(ttl=300)
+def load_data(asset):
+    return update_market_data(asset)
 
-if len(df_feat) < 30:
-    st.error("Not enough data")
+df = load_data(asset)
+
+# ✅ FIX 1: Handle API failure
+if df is None or df.empty:
+    st.error("⚠️ Failed to fetch market data (Rate limited). Please try again later.")
     st.stop()
 
+# ==============================
+# FEATURE ENGINEERING
+# ==============================
+df_feat = add_features(df)
+
+# ✅ FIX 2: Handle feature failure
+if df_feat is None or df_feat.empty:
+    st.error("⚠️ Feature engineering failed due to insufficient data.")
+    st.stop()
+
+if len(df_feat) < 30:
+    st.error("⚠️ Not enough data for prediction.")
+    st.stop()
 seq = build_live_sequence(df_feat)
 seq = np.squeeze(seq)
 if len(seq.shape) == 2:
