@@ -22,12 +22,12 @@ ASSETS = {
 def _standardize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     """
     Ensure dataframe has flat OHLCV columns.
-    Handles yfinance multi-index output permanently.
+    Handles yfinance multi-index output.
     """
     if df is None or df.empty:
         return df
 
-    # Flatten multi-index columns from yfinance
+    # Flatten MultiIndex (yfinance issue)
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
@@ -48,7 +48,6 @@ def _standardize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 def update_market_data(asset: str) -> pd.DataFrame:
     """
     Load + incrementally update market data for an asset.
-    Data stored locally per asset as CSV.
     """
 
     if asset not in ASSETS:
@@ -67,20 +66,54 @@ def update_market_data(asset: str) -> pd.DataFrame:
 
         return df
 
-    # ---------- Load existing ----------
-    local_df = pd.read_csv(file_path, index_col=0, parse_dates=True)
+    # ---------- Load existing (SAFE VERSION) ----------
+    local_df = pd.read_csv(file_path)
 
-    # Safety: ensure datetime index
-    # Convert index safely
-    local_df.index = pd.to_datetime(local_df.index, errors='coerce')
+    # =========================
+    # ✅ FIX: HANDLE DATE COLUMN SAFELY
+    # =========================
 
-# Drop invalid dates
-    local_df = local_df[~local_df.index.isna()]
+    # Find date column
+    date_col = None
+    for col in local_df.columns:
+        if "date" in col.lower():
+            date_col = col
+            break
+
+    # If not found, assume first column is date
+    if date_col is None:
+        date_col = local_df.columns[0]
+
+    # Convert safely
+    local_df[date_col] = pd.to_datetime(local_df[date_col], errors='coerce')
+
+    # Drop invalid dates
+    local_df = local_df.dropna(subset=[date_col])
+
+    # Set index
+    local_df.set_index(date_col, inplace=True)
+
+    # Sort index
+    local_df.sort_index(inplace=True)
+
+    # Ensure OHLCV structure
+    local_df = _standardize_ohlcv(local_df)
+
+    if local_df.empty:
+        # fallback: re-download if corrupted
+        df = yf.download(symbol, start="2010-01-01", progress=False)
+        df = _standardize_ohlcv(df)
+        df.to_csv(file_path)
+        return df
 
     last_date = local_df.index[-1]
 
     # ---------- Download new data ----------
-    new_df = yf.download(symbol, start=last_date, progress=False)
+    new_df = yf.download(
+        symbol,
+        start=last_date.strftime("%Y-%m-%d"),
+        progress=False
+    )
 
     if new_df is None or new_df.empty:
         return local_df
@@ -91,6 +124,7 @@ def update_market_data(asset: str) -> pd.DataFrame:
     combined = pd.concat([local_df, new_df])
     combined = combined[~combined.index.duplicated(keep="last")]
 
+    # Save updated data
     combined.to_csv(file_path)
 
     return combined
