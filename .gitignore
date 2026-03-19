@@ -6,7 +6,7 @@ __pycache__/
 *.pyc
 
 # Model files
-models/
+
 saved_models/
 
 # Ignore only root data folder
