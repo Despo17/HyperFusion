@@ -27,15 +27,13 @@ def _standardize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return df
 
-    # Flatten MultiIndex (yfinance issue)
+    # Flatten MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
-    # Keep only OHLCV
     required = ["Open", "High", "Low", "Close", "Volume"]
     df = df[required]
 
-    # Drop missing rows
     df.dropna(inplace=True)
 
     return df
@@ -46,9 +44,6 @@ def _standardize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 # ==============================
 
 def update_market_data(asset: str) -> pd.DataFrame:
-    """
-    Load + incrementally update market data for an asset.
-    """
 
     if asset not in ASSETS:
         raise ValueError(f"Unknown asset: {asset}")
@@ -66,26 +61,45 @@ def update_market_data(asset: str) -> pd.DataFrame:
 
         return df
 
-    # ---------- Load existing (SAFE VERSION) ----------
+    # ---------- Load existing (ULTRA SAFE) ----------
     local_df = pd.read_csv(file_path)
 
-    # =========================
-    # ✅ FIX: HANDLE DATE COLUMN SAFELY
-    # =========================
+    # Remove empty columns
+    local_df = local_df.dropna(axis=1, how='all')
 
-    # Find date column
+    # Remove duplicate header rows
+    local_df = local_df[local_df.iloc[:, 0] != local_df.columns[0]]
+
+    # Clean column names
+    local_df.columns = [str(col).strip() for col in local_df.columns]
+
+    # =========================
+    # FIND DATE COLUMN
+    # =========================
     date_col = None
     for col in local_df.columns:
         if "date" in col.lower():
             date_col = col
             break
 
-    # If not found, assume first column is date
     if date_col is None:
         date_col = local_df.columns[0]
 
+    # =========================
+    # CLEAN DATE COLUMN
+    # =========================
+    local_df[date_col] = local_df[date_col].astype(str)
+
+    # Remove bad rows
+    local_df = local_df[~local_df[date_col].str.contains("Date", na=False)]
+    local_df = local_df[~local_df[date_col].str.contains("nan", na=False)]
+
     # Convert safely
-    local_df[date_col] = pd.to_datetime(local_df[date_col], errors='coerce')
+    local_df[date_col] = pd.to_datetime(
+        local_df[date_col],
+        errors='coerce',
+        infer_datetime_format=True
+    )
 
     # Drop invalid dates
     local_df = local_df.dropna(subset=[date_col])
@@ -93,14 +107,15 @@ def update_market_data(asset: str) -> pd.DataFrame:
     # Set index
     local_df.set_index(date_col, inplace=True)
 
-    # Sort index
+    # Sort
     local_df.sort_index(inplace=True)
 
-    # Ensure OHLCV structure
+    # Ensure OHLCV format
     local_df = _standardize_ohlcv(local_df)
 
-    if local_df.empty:
-        # fallback: re-download if corrupted
+    # ---------- Fallback if corrupted ----------
+    if local_df is None or local_df.empty:
+        print("⚠️ Corrupted CSV detected. Re-downloading...")
         df = yf.download(symbol, start="2010-01-01", progress=False)
         df = _standardize_ohlcv(df)
         df.to_csv(file_path)
