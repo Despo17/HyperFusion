@@ -71,7 +71,11 @@ def update_market_data(asset: str) -> pd.DataFrame:
     local_df = pd.read_csv(file_path, index_col=0, parse_dates=True)
 
     # Safety: ensure datetime index
-    local_df.index = pd.to_datetime(local_df.index)
+    # Convert index safely
+    local_df.index = pd.to_datetime(local_df.index, errors='coerce')
+
+# Drop invalid dates
+    local_df = local_df[~local_df.index.isna()]
 
     last_date = local_df.index[-1]
 
